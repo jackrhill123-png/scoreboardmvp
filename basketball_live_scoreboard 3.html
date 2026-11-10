@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- 1. FULL-SCREEN MOBILE VIEWPORT (Prevents unwanted zoom and scrolling) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no" />
+    
+    <!-- 3. NATIVE APP MODE (Hides Safari/Chrome bars when saved to Home Screen) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#090d16" />
+
+    <!-- 2. CUSTOM HOME SCREEN APP ICON (iOS / Android icon link) -->
+    <link rel="apple-touch-icon" href="icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="icon.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="icon.png" />
+
+    <title>Basketball & Football Live Scoreboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700;800&family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <!-- Firebase Realtime Database SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+      // Initialize Firebase with your Project Config
+      const firebaseConfig = {
+        apiKey: "AIzaSyA9qsEioZd5hFCEVaR3coRfjRp4xHvbb4o",
+        authDomain: "score-board-mvp.firebaseapp.com",
+        databaseURL: "https://score-board-mvp-default-rtdb.firebaseio.com",
+        projectId: "score-board-mvp",
+        storageBucket: "score-board-mvp.firebasestorage.app",
+        messagingSenderId: "536088903672",
+        appId: "1:536088903672:web:bd2255ca574ef2cebca00d",
+        measurementId: "G-VETNT3DECR"
+      };
+
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      const database = firebase.database();
+    </script>
+
+    <style>
+      html, body {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #090d16;
+        color: #f8fafc;
+      }
+      .font-stadium {
+        font-family: 'Chakra Petch', sans-serif;
+      }
+      .font-digital {
+        font-family: 'Share Tech Mono', monospace;
+      }
+      .custom-scroll::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scroll::-webkit-scrollbar-track {
+        background: #0f172a;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 2px;
+      }
+      
+      .scaled-phone-wrapper {
+        transform: scale(0.65);
+        transform-origin: top center;
+      }
+      .iphone-frame {
+        width: 320px;
+        height: 600px;
+        background: #1e293b;
+        border: 8px solid #0f172a;
+        border-radius: 36px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 2px #334155;
+        position: relative;
+        overflow: hidden;
+      }
+      .iphone-screen {
+        background-color: #020617;
+        height: 100%;
+        border-radius: 28px;
+      }
+      .notch {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 110px;
+        height: 18px;
+        background-color: #0f172a;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+        z-index: 50;
+      }
+
+      body.standalone-mode {
+        padding: 0 !important;
+        margin: 0 !important;
+        height: 100vh;
+        width: 100vw;
+      }
+      body.standalone-mode .scaled-phone-wrapper {
+        transform: none !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      body.standalone-mode .iphone-frame {
+        width: 100vw !important;
+        height: 100vh !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+      }
+      body.standalone-mode .iphone-screen {
+        border-radius: 0 !important;
+        padding-top: env(safe-area-inset-top, 24px) !important;
+        padding-bottom: env(safe-area-inset-bottom, 12px) !important;
+      }
+      body.standalone-mode .notch {
+        display: none !important;
+      }
+
+      @keyframes scorePop {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.35); color: #fbbf24; }
+        100% { transform: scale(1); }
+      }
+      .animate-score-pop {
+        animation: scorePop 0.4s ease-out;
+      }
+
+      @keyframes floatPoints {
+        0% { opacity: 1; transform: translateY(0) scale(0.9); }
+        50% { opacity: 1; transform: translateY(-16px) scale(1.15); }
+        100% { opacity: 0; transform: translateY(-30px) scale(1); }
+      }
+      .floating-badge {
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        animation: floatPoints 0.9s ease-out forwards;
+        pointer-events: none;
+        z-index: 40;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col justify-center items-center p-1 overflow-x-hidden">
+
+    <!-- HEADER / APP TITLE -->
+    <header class="text-center my-1" id="main-header">
+      <h1 class="text-lg md:text-xl font-black font-stadium text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-200 tracking-wider">
+        STADIUM LIVE SCORE CONTROL & DISPLAY
+      </h1>
+      <p class="text-[10px] text-slate-400">Side-by-side Live Controller & Public Display Sync</p>
+    </header>
+
+    <!-- SIDE-BY-SIDE PHONES CONTAINER WRAPPER -->
+    <main class="w-full flex justify-center items-start">
+      <div class="scaled-phone-wrapper flex flex-wrap justify-center items-center gap-4 my-2">
+        
+        <!-- LEFT IPHONE: ADMIN CONTROLLER BOARD -->
+        <div class="iphone-frame" id="admin-phone-frame">
+          <div class="notch"></div>
+          <div class="iphone-screen flex flex-col justify-between p-3.5 pt-7 overflow-y-auto custom-scroll">
+            
+            <!-- PHONE HEADER BANNER -->
+            <div class="flex items-center justify-between text-[10px] text-slate-400 font-semibold mb-1.5 border-b border-slate-800 pb-1 shrink-0">
+              <div class="flex items-center gap-1">
+                <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span class="font-bold text-slate-200">Admin Controller</span>
+              </div>
+              <span class="text-[9px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-mono font-medium border border-emerald-500/20">LIVE CONTROL</span>
+            </div>
+
+            <!-- ADMIN SUB-TAB SWITCHER -->
+            <div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 mb-2 shrink-0">
+              <button onclick="setAdminSubView('control')" id="subnav-control" class="py-1 text-[10px] font-bold rounded bg-amber-500 text-slate-950">🎮 Control</button>
+              <button onclick="setAdminSubView('games')" id="subnav-games" class="py-1 text-[10px] font-bold rounded text-slate-400">📋 Games</button>
+              <button onclick="setAdminSubView('create')" id="subnav-create" class="py-1 text-[10px] font-bold rounded text-slate-400">➕ New Game</button>
+            </div>
+
+            <!-- CONTAINER FOR CONTROL SUB-VIEW -->
+            <div id="admin-view-control-container" class="space-y-2 flex-1 flex flex-col">
+              
+              <!-- SPORT TOGGLE & GAME SELECTOR -->
+              <div class="bg-slate-900 border border-slate-800 p-2 rounded flex justify-between items-center shrink-0">
+                <div>
+                  <span id="active-sport-badge" class="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">FOOTBALL GAME</span>
+                  <div id="active-game-names" class="text-[10px] font-bold text-slate-200 mt-0.5">HOME vs AWAY</div>
+                </div>
+                <button onclick="toggleActiveSport()" class="px-2 py-1 text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 rounded border border-slate-700">
+                  <span id="sport-toggle-btn-text">🏈 Football</span>
+                </button>
+              </div>
+
+              <!-- STICKY TOP SCORE ADJUSTMENT PANEL -->
+              <div class="sticky top-0 z-30 bg-slate-900 border border-slate-800 p-2 rounded shadow-md shrink-0">
+                <div class="text-[9px] font-bold text-amber-400 uppercase mb-1 flex items-center justify-between">
+                  <span>Score Adjuster</span>
+                  <span class="text-[8px] text-slate-400">Tap to Update</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-center">
+                  <!-- Home Quick Scores -->
+                  <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                    <div class="flex justify-between items-center mb-1">
+                      <span id="sticky-home-label" class="text-[9px] font-bold text-slate-300 truncate">HOME</span>
+                      <span id="sticky-home-score" class="font-digital text-amber-400 font-extrabold text-sm inline-block">0</span>
+                    </div>
+                    <div id="home-buttons-grid" class="grid grid-cols-4 gap-1">
+                      <!-- Rendered Dynamically in JS based on sport -->
+                    </div>
+                  </div>
+
+                  <!-- Away Quick Scores -->
+                  <div class="bg-slate-950 p-1.5 rounded border border-slate-800">
+                    <div class="flex justify-between items-center mb-1">
+                      <span id="sticky-away-label" class="text-[9px] font-bold text-slate-300 truncate">AWAY</span>
+                      <span id="sticky-away-score" class="font-digital text-amber-400 font-extrabold text-sm inline-block">0</span>
+                    </div>
+                    <div id="away-buttons-grid" class="grid grid-cols-4 gap-1">
+                      <!-- Rendered Dynamically in JS based on sport -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ADMIN CONTROLS SCROLL BODY -->
+              <div class="space-y-2 flex-1">
+                
+                <!-- QUARTER / PERIOD SELECTOR -->
+                <div class="bg-slate-900 border border-slate-800 p-2 rounded">
+                  <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Select Quarter / Period</span>
+                  <div class="grid grid-cols-6 gap-1" id="quarter-selector-container">
+                    <!-- Generated dynamically in JS -->
+                  </div>
+                </div>
+
+                <!-- POSSESSION SELECTOR -->
+                <div class="bg-slate-900 border border-slate-800 p-2 rounded">
+                  <span class="text-[9px] font-bold text-slate-400 uppercase block mb-1">Possession Arrow</span>
+                  <div class="grid grid-cols-3 gap-1">
+                    <button id="admin-pos-home" onclick="setPossession('home')" class="py-1 text-[11px] font-bold rounded border border-slate-700 bg-slate-800 text-slate-300 active:scale-95 transition">HOME</button>
+                    <button id="admin-pos-none" onclick="setPossession('none')" class="py-1 text-[11px] font-bold rounded border border-slate-700 bg-slate-800 text-slate-300 active:scale-95 transition">NONE</button>
+                    <button id="admin-pos-away" onclick="setPossession('away')" class="py-1 text-[11px] font-bold rounded border border-slate-700 bg-slate-800 text-slate-300 active:scale-95 transition">AWAY</button>
+                  </div>
+                </div>
+
+                <!-- TEAM CUSTOMIZATION -->
+                <div class="grid grid-cols-2 gap-2">
+                  <!-- HOME TEAM CONFIG -->
+                  <div id="admin-home-card" class="bg-slate-900 border border-l-4 border-slate-800 p-2 rounded space-y-1.5">
+                    <span class="text-[9px] font-bold text-blue-400 block uppercase">Home Team Setup</span>
+                    <input type="text" id="input-home-name" value="HOME TEAM" oninput="updateTeamName('home', this.value)" placeholder="Home Team" class="w-full bg-slate-950 border border-slate-800 rounded p-1 text-[10px] font-bold text-white focus:outline-none focus:border-blue-500">
+                    <div class="flex items-center justify-between text-[9px]">
+                      <span class="text-slate-400">Badge Bg:</span>
+                      <input type="color" id="input-home-color" value="#2563eb" onchange="updateTeamColor('home', this.value)" class="w-5 h-5 rounded cursor-pointer border-0 bg-transparent">
+                    </div>
+                    <div class="flex items-center justify-between text-[9px]">
+                      <span class="text-slate-400">Text Color:</span>
+                      <input type="color" id="input-home-text-color" value="#ffffff" onchange="updateTeamTextColor('home', this.value)" class="w-5 h-5 rounded cursor-pointer border-0 bg-transparent">
+                    </div>
+                    <div class="pt-1 border-t border-slate-800 flex items-center justify-between">
+                      <span class="text-[9px] text-slate-400">Timeouts:</span>
+                      <div class="flex items-center gap-1">
+                        <button onclick="changeTimeouts('home', -1)" class="w-4 h-4 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 font-bold rounded text-[9px] flex items-center justify-center">-</button>
+                        <span id="admin-home-timeouts" class="text-[10px] font-bold text-amber-400">5</span>
+                        <button onclick="changeTimeouts('home', 1)" class="w-4 h-4 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 font-bold rounded text-[9px] flex items-center justify-center">+</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- AWAY TEAM CONFIG -->
+                  <div id="admin-away-card" class="bg-slate-900 border border-l-4 border-slate-800 p-2 rounded space-y-1.5">
+                    <span class="text-[9px] font-bold text-red-400 block uppercase">Away Team Setup</span>
+                    <input type="text" id="input-away-name" value="AWAY TEAM" oninput="updateTeamName('away', this.value)" placeholder="Away Team" class="w-full bg-slate-950 border border-slate-800 rounded p-1 text-[10px] font-bold text-white focus:outline-none focus:border-red-500">
+                    <div class="flex items-center justify-between text-[9px]">
+                      <span class="text-slate-400">Badge Bg:</span>
+                      <input type="color" id="input-away-color" value="#dc2626" onchange="updateTeamColor('away', this.value)" class="w-5 h-5 rounded cursor-pointer border-0 bg-transparent">
+                    </div>
+                    <div class="flex items-center justify-between text-[9px]">
+                      <span class="text-slate-400">Text Color:</span>
+                      <input type="color" id="input-away-text-color" value="#ffffff" onchange="updateTeamTextColor('away', this.value)" class="w-5 h-5 rounded cursor-pointer border-0 bg-transparent">
+                    </div>
+                    <div class="pt-1 border-t border-slate-800 flex items-center justify-between">
+                      <span class="text-[9px] text-slate-400">Timeouts:</span>
+                      <div class="flex items-center gap-1">
+                        <button onclick="changeTimeouts('away', -1)" class="w-4 h-4 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 font-bold rounded text-[9px] flex items-center justify-center">-</button>
+                        <span id="admin-away-timeouts" class="text-[10px] font-bold text-amber-400">5</span>
+                        <button onclick="changeTimeouts('away', 1)" class="w-4 h-4 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 font-bold rounded text-[9px] flex items-center justify-center">+</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- RESET BUTTON -->
+                <button onclick="resetAllData()" class="w-full py-1.5 bg-red-950/60 hover:bg-red-900/80 border border-red-800/50 text-red-300 text-[10px] font-bold rounded flex items-center justify-center gap-1 active:scale-95 transition">
+                  <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset Active Game
+                </button>
+
+              </div>
+            </div>
+
+            <!-- CONTAINER FOR GAMES LIST SUB-VIEW -->
+            <div id="admin-view-games-container" class="hidden space-y-2 flex-1 flex flex-col">
+              <div class="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded border border-slate-800">
+                <button onclick="setSportFilter('ALL')" id="filter-all" class="py-1 text-[9px] font-bold rounded bg-amber-500 text-slate-950">ALL</button>
+                <button onclick="setSportFilter('BASKETBALL')" id="filter-bb" class="py-1 text-[9px] font-bold rounded text-slate-400">BASKETBALL</button>
+                <button onclick="setSportFilter('FOOTBALL')" id="filter-fb" class="py-1 text-[9px] font-bold rounded text-slate-400">FOOTBALL</button>
+              </div>
+
+              <div id="admin-games-list" class="space-y-1.5 flex-1 overflow-y-auto custom-scroll">
+                <!-- Rendered dynamically in JS -->
+              </div>
+            </div>
+
+            <!-- CONTAINER FOR CREATE GAME SUB-VIEW -->
+            <div id="admin-view-create-container" class="hidden space-y-3 flex-1 flex flex-col bg-slate-950 p-2.5 border border-slate-800 rounded">
+              <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Create New Matchup</span>
+
+              <div class="space-y-2 text-[10px]">
+                <div>
+                  <label class="text-slate-400 block mb-0.5 font-bold">Sport Type</label>
+                  <select id="new-game-sport" class="w-full bg-slate-900 border border-slate-800 text-slate-200 p-1.5 rounded font-bold">
+                    <option value="football">Football Game</option>
+                    <option value="basketball">Basketball Game</option>
+                    <option value="girls_basketball">Girls Basketball Game</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="text-slate-400 block mb-0.5 font-bold">Conference / League</label>
+                  <select id="new-game-conf" class="w-full bg-slate-900 border border-slate-800 text-white font-bold p-1.5 rounded">
+                    <option value="WCAC">WCAC</option>
+                    <option value="IAC">IAC</option>
+                    <option value="BCL">BCL</option>
+                  </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="text-slate-400 block mb-0.5 font-bold">Home Team</label>
+                    <input type="text" id="new-game-home" placeholder="DeMatha" class="w-full bg-slate-900 border border-slate-800 text-slate-200 p-1.5 rounded font-bold">
+                  </div>
+                  <div>
+                    <label class="text-slate-400 block mb-0.5 font-bold">Away Team</label>
+                    <input type="text" id="new-game-away" placeholder="Gonzaga" class="w-full bg-slate-900 border border-slate-800 text-slate-200 p-1.5 rounded font-bold">
+                  </div>
+                </div>
+              </div>
+
+              <button onclick="handleCreateGame()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] rounded shadow mt-auto">
+                Create & Control Game
+              </button>
+            </div>
+
+            <!-- BOTTOM HOME BAR -->
+            <div class="h-4 flex items-center justify-center shrink-0 mt-2">
+              <div class="w-24 h-1 bg-slate-700 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT IPHONE: PUBLIC SCOREBOARD -->
+        <div class="iphone-frame" id="public-phone-frame">
+          <div class="notch"></div>
+          <div class="iphone-screen flex flex-col justify-between p-3.5 pt-7 overflow-y-auto custom-scroll">
+            
+            <!-- PHONE HEADER BANNER -->
+            <div class="flex items-center justify-between text-[10px] text-slate-400 font-semibold mb-1 border-b border-slate-800/80 pb-1.5 shrink-0">
+              <div class="flex items-center gap-1">
+                <i data-lucide="tv" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span class="font-bold text-slate-200">Public Display</span>
+              </div>
+              <span class="flex items-center gap-1 text-[9px] text-emerald-400 font-medium">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live Sync
+              </span>
+            </div>
+
+            <!-- PUBLIC SCOREBOARD CONTENT -->
+            <div class="flex-1 flex flex-col justify-start py-1 space-y-3">
+              
+              <!-- ARENA BANNER & MANAGE FEED BUTTON -->
+              <div class="text-center bg-slate-900 border border-slate-800 py-1.5 px-2 shadow shrink-0 space-y-1.5">
+                <div class="flex items-center justify-center gap-1.5">
+                  <i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i>
+                  <span class="font-stadium text-[10px] font-bold text-slate-300 uppercase tracking-widest">LIVE SCOREBOARD</span>
+                </div>
+                <!-- MANAGE FEED TOGGLE BUTTON -->
+                <button onclick="toggleManageFeed(true)" class="w-full py-1 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 font-semibold text-[9px] rounded flex items-center justify-center gap-1 transition">
+                  <i data-lucide="sliders-horizontal" class="w-3 h-3"></i> Manage Feed Games
+                </button>
+              </div>
+
+              <!-- MANAGE FEED SECTION -->
+              <div id="public-manage-overlay" class="hidden space-y-2 bg-slate-950 p-2 border border-slate-800 rounded-xl">
+                <button onclick="toggleManageFeed(false)" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold rounded-lg flex items-center justify-center gap-1.5 border border-slate-700 shadow-sm transition">
+                  <i data-lucide="arrow-left" class="w-3.5 h-3.5 text-amber-400"></i> Back to Scoreboard
+                </button>
+
+                <div class="bg-slate-900 p-1.5 border border-slate-800 rounded-xl shadow-inner">
+                  <span class="text-[8px] font-bold text-slate-400 uppercase block mb-1 px-0.5">Select Conference</span>
+                  <div class="grid grid-cols-3 gap-1.5" id="conference-tabs-container">
+                    <!-- Tabs rendered in JS -->
+                  </div>
+                </div>
+
+                <div class="text-[9px] font-bold text-slate-400 uppercase px-0.5 pt-0.5 flex justify-between items-center">
+                  <span>Feed Matchups</span>
+                  <span class="text-[8px] text-slate-500">Add / Drop</span>
+                </div>
+
+                <div id="manage-matchups-list" class="space-y-1.5 max-h-[360px] overflow-y-auto custom-scroll pr-0.5">
+                  <!-- Dynamic Matchups rendered in JS -->
+                </div>
+              </div>
+
+              <!-- PUBLIC MAIN FEED VIEW CONTAINER -->
+            <div id="public-main-feed" class="space-y-2.5">
+              
+              <!-- DYNAMICALLY RENDERED MATCHUPS LIST WITH VIBRANT COLORS -->
+              <div id="dynamic-public-finished-games" class="space-y-2">
+                <!-- Rendered via JS in fixed static order -->
+              </div>
+
+            </div>
+
+            <div class="text-center text-[8px] text-slate-500 font-mono">
+              STADIUM DIGITAL SCOREBOARD SYSTEM
+            </div>
+
+          </div>
+
+          <div class="h-4 flex items-center justify-center shrink-0">
+            <div class="w-24 h-1 bg-slate-700 rounded-full"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- JAVASCRIPT APP STATE & LOGIC -->
+    <script>
+      let currentAdminSubView = 'control';
+      let activeGameId = 'g1';
+      let sportFilter = 'ALL';
+      let selectedConference = 'WCAC';
+      let isManagingFeed = false;
+
+      const quartersList = ["Q1", "Q2", "Q3", "Q4", "OT", "FINAL"];
+
+      let gamesDatabase = [
+        { id: "g1", sport: "football", conference: "WCAC", homeTeam: "DeMatha", homeBg: "#cc0000", homeText: "#ffffff", homeScore: 24, awayTeam: "Gonzaga", awayBg: "#581c87", awayText: "#ffffff", awayScore: 21, quarter: "Q4", possession: "home", homeTimeouts: 2, awayTimeouts: 3, inFeed: true },
+        { id: "g2", sport: "basketball", conference: "IAC", homeTeam: "St. Albans", homeBg: "#065f46", homeText: "#ffffff", homeScore: 58, awayTeam: "Landon", awayBg: "#854d0e", awayText: "#ffffff", awayScore: 54, quarter: "Q3", possession: "away", homeTimeouts: 4, awayTimeouts: 2, inFeed: true },
+        { id: "g3", sport: "basketball", conference: "WCAC", homeTeam: "PVI", homeBg: "#d4af37", homeText: "#000000", homeScore: 68, awayTeam: "GC", awayBg: "#0033a0", awayText: "#ffffff", awayScore: 62, quarter: "Q4", possession: "none", homeTimeouts: 3, awayTimeouts: 3, inFeed: true }
+      ];
+
+      function getActiveGame() {
+        return gamesDatabase.find(g => g.id === activeGameId) || gamesDatabase[0];
+      }
+
+      function syncState() {
+        renderApp();
+        if (database) {
+          const currentGame = getActiveGame();
+          if (currentGame && currentGame.id) {
+            database.ref("scoreboardState/games/" + currentGame.id).set(currentGame).catch(err => console.error("Firebase Sync Error:", err));
+          }
+        }
+      }
+
+      if (database) {
+        database.ref("scoreboardState/games").on("value", (snapshot) => {
+          const gamesData = snapshot.val();
+          if (gamesData) {
+            Object.keys(gamesData).forEach(id => {
+              const remoteGame = gamesData[id];
+              const idx = gamesDatabase.findIndex(g => g.id === id);
+              if (idx !== -1) {
+                triggerAnimationsIfNeeded(remoteGame, gamesDatabase[idx]);
+                gamesDatabase[idx] = remoteGame;
+              } else {
+                gamesDatabase.push(remoteGame);
+              }
+            });
+            renderApp();
+          }
+        });
+      }
+
+      function triggerAnimationsIfNeeded(newState, oldState) {
+        if (!newState || !oldState) return;
+        ['home', 'away'].forEach(team => {
+          const diff = (team === 'home' ? newState.homeScore : newState.awayScore) - (team === 'home' ? oldState.homeScore : oldState.awayScore);
+          if (diff > 0) {
+            triggerScorePop(team, diff);
+          }
+        });
+      }
+
+      function triggerScorePop(team, pts) {
+        const scoreEl = document.getElementById(`public-${team}-score`);
+        const container = document.getElementById(`${team}-floating-container`);
+
+        if (scoreEl) {
+          scoreEl.classList.remove('animate-score-pop');
+          void scoreEl.offsetWidth;
+          scoreEl.classList.add('animate-score-pop');
+        }
+
+        if (container) {
+          const badge = document.createElement('div');
+          badge.className = 'floating-badge bg-amber-400 text-slate-950 font-stadium font-black text-xs px-1.5 py-0.5 rounded shadow-lg border border-amber-300';
+          badge.innerText = `+${pts}`;
+          container.appendChild(badge);
+          setTimeout(() => badge.remove(), 950);
+        }
+      }
+
+      window.changeScore = function(team, amount) {
+        const game = getActiveGame();
+        if (!game) return;
+        if (amount > 0) triggerScorePop(team, amount);
+        if (team === 'home') game.homeScore = Math.max(0, game.homeScore + amount);
+        else game.awayScore = Math.max(0, game.awayScore + amount);
+        syncState();
+      };
+
+      window.setQuarter = function(q) {
+        const game = getActiveGame();
+        if (game) {
+          game.quarter = q;
+          syncState();
+        }
+      };
+
+      window.setPossession = function(team) {
+        const game = getActiveGame();
+        if (game) {
+          game.possession = game.possession === team ? 'none' : team;
+          syncState();
+        }
+      };
+
+      window.updateTeamName = function(team, name) {
+        const game = getActiveGame();
+        if (game) {
+          if (team === 'home') game.homeTeam = name;
+          else game.awayTeam = name;
+          const activeLabel = document.getElementById(`sticky-${team}-label`);
+          if (activeLabel) activeLabel.innerText = name.toUpperCase();
+          const activeName = document.getElementById('active-game-names');
+          if (activeName) activeName.innerText = `${game.homeTeam} vs ${game.awayTeam}`;
+          syncState();
+        }
+      };
+
+      window.updateTeamColor = function(team, color) {
+        const game = getActiveGame();
+        if (game) {
+          if (team === 'home') game.homeBg = color;
+          else game.awayBg = color;
+          syncState();
+        }
+      };
+
+      window.updateTeamTextColor = function(team, color) {
+        const game = getActiveGame();
+        if (game) {
+          if (team === 'home') game.homeText = color;
+          else game.awayText = color;
+          syncState();
+        }
+      };
+
+      window.changeTimeouts = function(team, amount) {
+        const game = getActiveGame();
+        if (game) {
+          if (team === 'home') game.homeTimeouts = Math.max(0, Math.min(5, (game.homeTimeouts || 3) + amount));
+          else game.awayTimeouts = Math.max(0, Math.min(5, (game.awayTimeouts || 3) + amount));
+          syncState();
+        }
+      };
+
+      window.toggleActiveSport = function() {
+        const game = getActiveGame();
+        if (game) {
+          if (game.sport === 'football') game.sport = 'basketball';
+          else if (game.sport === 'basketball') game.sport = 'girls_basketball';
+          else game.sport = 'football';
+          syncState();
+        }
+      };
+
+      window.resetAllData = function() {
+        const game = getActiveGame();
+        if (game) {
+          game.homeScore = 0;
+          game.awayScore = 0;
+          game.quarter = 'Q1';
+          game.possession = 'none';
+          syncState();
+        }
+      };
+
+      window.setAdminSubView = function(view) {
+        currentAdminSubView = view;
+        renderApp();
+      };
+
+      window.setSportFilter = function(filter) {
+        sportFilter = filter;
+        renderApp();
+      };
+
+      window.selectGameToControl = function(id) {
+        activeGameId = id;
+        currentAdminSubView = 'control';
+        renderApp();
+      };
+
+      window.deleteGame = function(id) {
+        gamesDatabase = gamesDatabase.filter(g => g.id !== id);
+        if (activeGameId === id && gamesDatabase.length > 0) {
+          activeGameId = gamesDatabase[0].id;
+        }
+        renderApp();
+      };
+
+      window.handleCreateGame = function() {
+        const sport = document.getElementById('new-game-sport').value;
+        const conf = document.getElementById('new-game-conf').value || 'WCAC';
+        const home = document.getElementById('new-game-home').value || 'HOME TEAM';
+        const away = document.getElementById('new-game-away').value || 'AWAY TEAM';
+
+        const homeIsGonzaga = home.toLowerCase().includes('gonzaga');
+        const awayIsGonzaga = away.toLowerCase().includes('gonzaga');
+
+        const homeColor = homeIsGonzaga ? '#581c87' : '#2563eb';
+        const awayColor = awayIsGonzaga ? '#581c87' : '#dc2626';
+
+        const newId = 'game_' + Date.now();
+        gamesDatabase.push({
+          id: newId,
+          sport: sport,
+          conference: conf,
+          homeTeam: home,
+          homeScore: 0,
+          homeBg: homeColor,
+          homeText: "#ffffff",
+          awayTeam: away,
+          awayScore: 0,
+          awayBg: awayColor,
+          awayText: "#ffffff",
+          quarter: "Q1",
+          possession: "none",
+          homeTimeouts: 3,
+          awayTimeouts: 3,
+          inFeed: true
+        });
+
+        selectGameToControl(newId);
+      };
+
+      window.toggleManageFeed = function(show) {
+        isManagingFeed = show;
+        renderApp();
+      };
+
+      window.setConference = function(conf) {
+        selectedConference = conf;
+        renderApp();
+      };
+
+      window.toggleGameInFeed = function(gameId) {
+        // Find ONLY the specific game being toggled by unique ID
+        const targetGame = gamesDatabase.find(g => g.id === gameId);
+        if (targetGame) {
+          targetGame.inFeed = !targetGame.inFeed;
+          // Assign a timestamp when added so re-selected games move to the bottom of the feed
+          if (targetGame.inFeed) {
+            targetGame.addedAt = Date.now();
+          }
+          syncState();
+        }
+      };
+
+      function renderApp() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewMode = urlParams.get('view');
+
+        const adminFrame = document.getElementById("admin-phone-frame");
+        const publicFrame = document.getElementById("public-phone-frame");
+        const mainHeader = document.getElementById("main-header");
+
+        if (viewMode === 'admin' || viewMode === 'display') {
+          document.body.classList.add('standalone-mode');
+        } else {
+          document.body.classList.remove('standalone-mode');
+        }
+
+        if (viewMode === 'admin') {
+          if (adminFrame) adminFrame.style.display = 'block';
+          if (publicFrame) publicFrame.style.display = 'none';
+          if (mainHeader) mainHeader.style.display = 'none';
+        } else if (viewMode === 'display') {
+          if (adminFrame) adminFrame.style.display = 'none';
+          if (publicFrame) publicFrame.style.display = 'block';
+          if (mainHeader) mainHeader.style.display = 'none';
+        } else {
+          if (adminFrame) adminFrame.style.display = 'block';
+          if (publicFrame) publicFrame.style.display = 'block';
+          if (mainHeader) mainHeader.style.display = 'block';
+        }
+
+        const game = getActiveGame();
+
+        // Update Sub-nav styling
+        ['control', 'games', 'create'].forEach(v => {
+          const btn = document.getElementById(`subnav-${v}`);
+          const container = document.getElementById(`admin-view-${v}-container`);
+          if (btn) btn.className = currentAdminSubView === v ? "py-1 text-[10px] font-bold rounded bg-amber-500 text-slate-950" : "py-1 text-[10px] font-bold rounded text-slate-400";
+          if (container) {
+            if (currentAdminSubView === v) container.classList.remove("hidden");
+            else container.classList.add("hidden");
+          }
+        });
+
+        // RENDER ACTIVE GAME CONTROLLER DATA
+        if (game) {
+          const isFootball = game.sport === 'football';
+          
+          const sportBadge = document.getElementById("active-sport-badge");
+          if (sportBadge) {
+            if (game.sport === 'football') sportBadge.innerText = "FOOTBALL GAME";
+            else if (game.sport === 'girls_basketball') sportBadge.innerText = "GIRLS BASKETBALL";
+            else sportBadge.innerText = "BASKETBALL GAME";
+          }
+          
+          const gameNames = document.getElementById("active-game-names");
+          if (gameNames) gameNames.innerText = `${game.homeTeam} vs ${game.awayTeam}`;
+
+          const sportToggleText = document.getElementById("sport-toggle-btn-text");
+          if (sportToggleText) {
+            if (game.sport === 'football') sportToggleText.innerText = "🏈 Football";
+            else if (game.sport === 'girls_basketball') sportToggleText.innerText = "🏀 Girls Bball";
+            else sportToggleText.innerText = "🏀 Basketball";
+          }
+
+          const setText = (id, text) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = text;
+          };
+
+          const setValue = (id, val) => {
+            const el = document.getElementById(id);
+            if (el && document.activeElement !== el) el.value = val;
+          };
+
+          setText("sticky-home-label", game.homeTeam.toUpperCase());
+          setText("sticky-home-score", game.homeScore);
+          setText("sticky-away-label", game.awayTeam.toUpperCase());
+          setText("sticky-away-score", game.awayScore);
+
+          setValue("input-home-name", game.homeTeam);
+          setValue("input-home-color", game.homeBg || '#2563eb');
+          setValue("input-home-text-color", game.homeText || '#ffffff');
+          setText("admin-home-timeouts", game.homeTimeouts || 3);
+
+          setValue("input-away-name", game.awayTeam);
+          setValue("input-away-color", game.awayBg || '#581c87');
+          setValue("input-away-text-color", game.awayText || '#ffffff');
+          setText("admin-away-timeouts", game.awayTimeouts || 3);
+
+          const renderButtons = (team) => `
+            ${isFootball ? `
+              <button onclick="changeScore('${team}', 6)" class="py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[9px] rounded">+6</button>
+              <button onclick="changeScore('${team}', 3)" class="py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[9px] rounded">+3</button>
+              <button onclick="changeScore('${team}', 2)" class="py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[9px] rounded">+2</button>
+              <button onclick="changeScore('${team}', -1)" class="py-1 bg-red-600 hover:bg-red-500 text-white font-bold text-[9px] rounded">-1</button>
+            ` : `
+              <button onclick="changeScore('${team}', 1)" class="py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[9px] rounded">+1</button>
+              <button onclick="changeScore('${team}', 2)" class="py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[9px] rounded">+2</button>
+              <button onclick="changeScore('${team}', 3)" class="py-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[9px] rounded">+3</button>
+              <button onclick="changeScore('${team}', -1)" class="py-1 bg-red-600 hover:bg-red-500 text-white font-bold text-[9px] rounded">-1</button>
+            `}
+          `;
+
+          const homeGrid = document.getElementById("home-buttons-grid");
+          if (homeGrid) homeGrid.innerHTML = renderButtons('home');
+
+          const awayGrid = document.getElementById("away-buttons-grid");
+          if (awayGrid) awayGrid.innerHTML = renderButtons('away');
+
+          const homeCard = document.getElementById("admin-home-card");
+          if (homeCard) homeCard.style.borderColor = game.homeBg || '#2563eb';
+          setText("admin-home-timeouts", game.homeTimeouts || 3);
+
+          const awayCard = document.getElementById("admin-away-card");
+          if (awayCard) awayCard.style.borderColor = game.awayBg || '#581c87';
+          setText("admin-away-timeouts", game.awayTimeouts || 3);
+
+          const quarterContainer = document.getElementById("quarter-selector-container");
+          if (quarterContainer) {
+            quarterContainer.innerHTML = quartersList.map(q => `
+              <button onclick="setQuarter('${q}')" class="py-1 text-[10px] font-bold rounded border ${
+                game.quarter === q
+                  ? 'bg-amber-400 text-slate-950 border-amber-300 font-extrabold shadow'
+                  : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+              } transition">${q}</button>
+            `).join("");
+          }
+
+          ['home', 'none', 'away'].forEach(pos => {
+            const btn = document.getElementById(`admin-pos-${pos}`);
+            if (btn) {
+              btn.className = (game.possession || 'none') === pos 
+                ? "py-1 text-[11px] font-bold rounded border border-amber-300 bg-amber-400 text-slate-950 shadow" 
+                : "py-1 text-[11px] font-bold rounded border border-slate-700 bg-slate-800 text-slate-400 hover:bg-slate-700 transition";
+            }
+          });
+
+          // PUBLIC DISPLAY LIVE TICKER
+          const pubSport = document.getElementById("public-sport-label");
+          if (pubSport) pubSport.innerText = isFootball ? "FOOTBALL GAME" : "BASKETBALL GAME";
+
+          setText("public-quarter", game.quarter || 'Q1');
+
+          const activeLiveDot = document.getElementById("public-live-dot");
+          if (activeLiveDot) {
+            if (game.quarter === 'FINAL') {
+              activeLiveDot.classList.add('hidden');
+            } else {
+              activeLiveDot.classList.remove('hidden');
+            }
+          }
+
+          const pubHomeBadge = document.getElementById("public-home-badge");
+          if (pubHomeBadge) {
+            pubHomeBadge.innerText = game.homeTeam;
+            pubHomeBadge.style.backgroundColor = game.homeBg || '#2563eb';
+            pubHomeBadge.style.color = game.homeText || '#ffffff';
+          }
+          setText("public-home-score", game.homeScore);
+          const pubHomePos = document.getElementById("public-home-pos");
+          if (pubHomePos) {
+            pubHomePos.className = game.possession === 'home' ? 'text-[7px] bg-amber-400 text-slate-950 font-black rounded mb-0.5 px-0.5 animate-pulse' : 'hidden';
+          }
+
+          const pubAwayBadge = document.getElementById("public-away-badge");
+          if (pubAwayBadge) {
+            pubAwayBadge.innerText = game.awayTeam;
+            pubAwayBadge.style.backgroundColor = game.awayBg || '#581c87';
+            pubAwayBadge.style.color = game.awayText || '#ffffff';
+          }
+          setText("public-away-score", game.awayScore);
+          const pubAwayPos = document.getElementById("public-away-pos");
+          if (pubAwayPos) {
+            pubAwayPos.className = game.possession === 'away' ? 'text-[7px] bg-amber-400 text-slate-950 font-black rounded mb-0.5 px-0.5 animate-pulse' : 'hidden';
+          }
+
+          renderTimeoutDots("public-home-timeouts-dots", game.homeTimeouts || 3);
+          renderTimeoutDots("public-away-timeouts-dots", game.awayTimeouts || 3);
+        }
+
+        if (currentAdminSubView === 'games') {
+          renderAdminGamesList();
+        }
+
+        const mainFeedEl = document.getElementById("public-main-feed");
+        const manageOverlayEl = document.getElementById("public-manage-overlay");
+
+        if (isManagingFeed) {
+          if (mainFeedEl) mainFeedEl.classList.add("hidden");
+          if (manageOverlayEl) manageOverlayEl.classList.remove("hidden");
+          renderManageFeedOverlay();
+        } else {
+          if (mainFeedEl) mainFeedEl.classList.remove("hidden");
+          if (manageOverlayEl) manageOverlayEl.classList.add("hidden");
+          renderPublicFinishedGames();
+        }
+      }
+
+      function renderAdminGamesList() {
+        const container = document.getElementById("admin-games-list");
+        if (!container) return;
+
+        ['ALL', 'BASKETBALL', 'FOOTBALL'].forEach(f => {
+          const btn = document.getElementById(`filter-${f.toLowerCase().slice(0, 2)}`);
+          if (btn) btn.className = sportFilter === f ? "py-1 text-[9px] font-bold rounded bg-amber-500 text-slate-950" : "py-1 text-[9px] font-bold rounded text-slate-400";
+        });
+
+        const filtered = gamesDatabase.filter(g => sportFilter === 'ALL' || g.sport.toUpperCase() === sportFilter);
+
+        container.innerHTML = filtered.map(g => `
+          <div class="bg-slate-950 border border-slate-800 p-2 rounded flex items-center justify-between gap-2">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1">
+                <span class="text-[8px] font-bold uppercase px-1 py-0.2 rounded bg-amber-500/10 text-amber-400">${g.sport === 'football' ? 'FOOTBALL' : 'BASKETBALL'}</span>
+                <span class="text-[8px] text-slate-400 font-bold">${g.quarter || 'Q1'}</span>
+              </div>
+              <div class="text-[10px] font-bold text-slate-200 mt-0.5 truncate">
+                ${g.homeTeam} (${g.homeScore}) vs ${g.awayTeam} (${g.awayScore})
+              </div>
+            </div>
+            <div class="flex items-center gap-1">
+              <button onclick="selectGameToControl('${g.id}')" class="px-2 py-1 text-[9px] font-bold bg-amber-500 text-slate-950 rounded shadow">Control</button>
+              <button onclick="deleteGame('${g.id}')" class="px-1.5 py-1 text-[9px] font-bold bg-red-950/50 text-red-400 border border-red-800 rounded">🗑️</button>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      function renderTimeoutDots(elementId, count) {
+        const container = document.getElementById(elementId);
+        if (!container) return;
+        let dots = '';
+        for (let i = 0; i < 5; i++) {
+          dots += `<span class="w-1.5 h-1.5 rounded-full ${i < count ? 'bg-amber-400' : 'bg-slate-700'}"></span>`;
+        }
+        container.innerHTML = dots;
+      }
+
+      function renderPublicFinishedGames() {
+        const container = document.getElementById("dynamic-public-finished-games");
+        if (!container) return;
+
+        // Get active feed games and sort by addedAt timestamp (newly re-selected games go to the bottom)
+        const activeGames = gamesDatabase
+          .filter(g => g.inFeed)
+          .sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
+
+        if (activeGames.length === 0) {
+          container.innerHTML = `<div class="text-center py-3 text-[9px] text-slate-500 bg-slate-900 border border-slate-800 rounded">No active games in feed.</div>`;
+          return;
+        }
+
+        // Render ALL active games in exact order added/re-selected
+        container.innerHTML = activeGames.map((g, idx) => {
+          const isFinal = g.quarter === 'FINAL';
+          const isPrimary = idx === 0;
+
+          let sportLabel = 'BASKETBALL GAME';
+          if (g.sport === 'football') sportLabel = 'FOOTBALL GAME';
+          else if (g.sport === 'girls_basketball') sportLabel = 'GIRLS BASKETBALL';
+
+          return `
+          <div class="${isPrimary ? 'bg-slate-900 border border-slate-800 p-2.5 shadow-xl relative overflow-hidden' : 'bg-slate-900 border border-slate-800 p-2 shadow-md'}">
+            <div class="flex items-center justify-between text-[8px] text-slate-400 font-semibold uppercase mb-1 px-0.5">
+              <div class="flex items-center gap-1 text-slate-400 font-bold">
+                ${!isFinal ? `<span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>` : ''}
+                <span>${g.conference} · ${sportLabel}</span>
+              </div>
+              <div>
+                <span class="bg-amber-400 text-slate-950 font-stadium font-black px-1.5 py-0.5 rounded text-[8px]">${g.quarter || 'Q1'}</span>
+              </div>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 p-2 flex items-center justify-between gap-1.5 relative">
+              <div class="flex-1 text-center min-w-0 relative">
+                <div id="${g.id}-home-floating"></div>
+                ${g.possession === 'home' ? `<div class="text-[7px] bg-amber-400 text-slate-950 font-black rounded mb-0.5 px-0.5 animate-pulse">POSS</div>` : ''}
+                <div class="py-1 px-1 font-stadium text-[10px] font-bold truncate rounded mb-0.5" style="background-color: ${g.homeBg || '#2563eb'}; color: ${g.homeText || '#ffffff'};">${g.homeTeam}</div>
+                <span id="public-${g.id}-home-score" class="font-digital text-2xl font-black text-amber-400">${g.homeScore}</span>
+              </div>
+              <div class="font-digital text-lg text-slate-600 font-bold px-0.5">-</div>
+              <div class="flex-1 text-center min-w-0 relative">
+                <div id="${g.id}-away-floating"></div>
+                ${g.possession === 'away' ? `<div class="text-[7px] bg-amber-400 text-slate-950 font-black rounded mb-0.5 px-0.5 animate-pulse">POSS</div>` : ''}
+                <div class="py-1 px-1 font-stadium text-[10px] font-bold truncate rounded mb-0.5" style="background-color: ${g.awayBg || '#581c87'}; color: ${g.awayText || '#ffffff'};">${g.awayTeam}</div>
+                <span id="public-${g.id}-away-score" class="font-digital text-2xl font-black text-amber-400">${g.awayScore}</span>
+              </div>
+            </div>
+          </div>
+        `;
+        }).join("");
+      }
+
+      function renderManageFeedOverlay() {
+        const tabsContainer = document.getElementById("conference-tabs-container");
+        if (tabsContainer) {
+          const confs = ["WCAC", "IAC", "BCL"];
+          tabsContainer.innerHTML = confs.map(c => `
+            <button onclick="setConference('${c}')" class="py-1 text-[10px] font-bold rounded-lg border ${
+              selectedConference === c
+                ? 'bg-amber-400 text-slate-950 border-amber-300 font-extrabold shadow'
+                : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+            } transition">${c}</button>
+          `).join("");
+        }
+
+        const listContainer = document.getElementById("manage-matchups-list");
+        if (listContainer) {
+          const filteredGames = gamesDatabase.filter(g => g.conference === selectedConference);
+          if (filteredGames.length === 0) {
+            listContainer.innerHTML = `<div class="text-center text-[10px] text-slate-500 py-3">No matchups found for ${selectedConference}</div>`;
+            return;
+          }
+
+          listContainer.innerHTML = filteredGames.map(g => `
+            <div class="bg-slate-900 border border-slate-800 p-2 rounded-lg flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                <span class="px-1.5 py-0.5 font-stadium text-[10px] font-bold rounded-md truncate" style="background-color: ${g.homeBg || '#2563eb'}; color: ${g.homeText || '#ffffff'};">${g.homeTeam}</span>
+                <span class="text-[9px] text-slate-500 font-bold">vs</span>
+                <span class="px-1.5 py-0.5 font-stadium text-[10px] font-bold rounded-md truncate" style="background-color: ${g.awayBg || '#581c87'}; color: ${g.awayText || '#ffffff'};">${g.awayTeam}</span>
+              </div>
+              <button onclick="toggleGameInFeed('${g.id}')" class="py-1 px-2 text-[9px] font-bold rounded-md border transition shrink-0 ${
+                g.inFeed
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30'
+                  : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
+              }">
+                ${g.inFeed ? '✓ Added' : '+ Add'}
+              </button>
+            </div>
+          `).join("");
+        }
+      }
+
+      window.onload = function() {
+        if (window.lucide) {
+          lucide.createIcons();
+        }
+        renderApp();
+      };
+    </script>
+  </body>
+</html>
